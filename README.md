@@ -1,1 +1,3 @@
 # sql
+
+vezbe iz sql
