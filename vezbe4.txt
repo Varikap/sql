@@ -1,0 +1,71 @@
+/*
+	Vezbe 4 Radjene 15. Novebra '17.
+*/
+
+--select * from nastavnik where zvanje='R Prof' or zvanje='Docent'
+
+--select prezime_ime from nastavnik where zvanje in ('Docent', 'R Prof')
+
+/* Ova dva reda iznad su ista, samo sa ovim in nabrajas sve */
+
+--select prezime_ime from nastavnik where zvanje not in ('Docent', 'R Prof') --Select sve cije zvanje NIJE docent ili r profesor
+
+--select sum (plata) from nastavnik where zvanje='Docent'--nalazi sumu svih plata nastavnika, a ako stavis where nesto onda za to odradi
+
+--select avg(plata) from nastavnik where zvanje ='Docent'
+
+--select min(plata),max(plata) from nastavnik where zvanje in ('R prof') --minimalna i max plata svih r prof
+
+--select sum(plata) from nastavnik
+
+--select sum(distinct plata) from nastavnik --sumira sve razlicite plate, bez duplikata ako nadje dva od 50000 nece ih uracunati
+
+--select count(*) from nastavnik where zvanje='Docent' --vraca koliko osoba zadovoljava uslov docenta
+
+--select count(dodatak) from nastavnik where zvanje='Docent' --vraca koliko docenata ima dodatak koji je razlicit od null
+
+--select count(plata) from nastavnik where zvanje='Docent' --vraca broj jedinsvetnih plata
+
+--select min(plata), avg(plata), max(plata), count(*) from nastavnik --vraca min max avg platu i br profesora
+
+--select avg (plata) "Prosecna Plata", count(*) brNastavnika from nastavnik -- isto gore samo sto imenujemo kolone zbog preglednijeg upita
+
+--select sum(plata) as "Ukupna Plata", sum(dodatak) as "Suma plata" from nastavnik where zvanje = 'Docent'--isto kao iznad samo sa primerom koriscenja opcionog parametara AS za alias
+
+--select sum(plata) from nastavnik group by zvanje --sumira plate za posebna zvanja
+
+--select zvanje, avg(plata) from nastavnik group by  (zvanje) --prosecna plata i ispred ispisuje zvanje
+/*group by prvo sve odvoji po grupama iz datog atributa i onda radi ono sto je pre toga navedeno
+ako stavimo dva pored group by tipa zvanje i ime_prezime ako ima dva docenta pera onda ce ih grupisati, ako su pere r prof i docent, onda ce biti odvojeni
+*/
+
+--select zvanje, avg(plata), count(*) from nastavnik group by zvanje --ispise zvanje, prosecnu platu i broj ljudi odvojenih po zvanju
+
+--select zvanje, count(*) as brNastavnika from nastavnik group by zvanje having count(*) > 2 -- grupise one cije zvanje sadrzi vise od 2 profesora uslove posle having lancamo sa and ili or
+
+--having filtrira group by, povezan je samo sa group by. A group by je vezan samo za where
+
+--select zvanje, avg (plata) * 12 as GodPLata from nastavnik where zvanje = 'R Prof' group by zvanje --svi r prof sa prosecnom godisnjom platom
+
+/*
+	Prikazati nastavnike koji zaradjuju vise od 70 din po satu. Zaradu po satu izracunati tako sto se ukupan iznos plat i dotaka
+	podeli sa 176(br radnih sati u msecu). U prikazu zaradu po satu zaokruziti na ceo br
+*/
+
+--select s_nas, prezime_ime, Round((plata+dodatak)/176,0) as ZaradaPoSatu from nastavnik where (plata+dodatak)/176 > 70 --kod round moramo da stavimo ,0 da bi otsekao decimalni deo
+
+--select s_nas, prezime_ime, round((plata+ISNULL(dodatak,0))/176,0) as ZaradaPoSatu from nastavnik where (plata+ISNULL(dodatak,0))/176 > 70
+
+/*
+	funkcija isnull pretvara null vrednost iz date kolone u podrazumevani koji mu damo
+	Primer: isnull(dodatak,0)
+	Ako je neki dodatak null onda ga menja u 0 da bi mogli da radimo aritmeticke operacije sa njim
+*/
+
+/*
+	Prikazati prezime ime nastavnika iza kojeg treba neposredno da sledi zvanje (kao jedan element selekcije).
+	Redosled n-torki rezultata treba da bude u rastucem redosledu obelezja prezime_ime
+*/
+
+--select prezime_ime + ', ' + zvanje from nastavnik order by prezime_ime --order by sortira po obelezju sa + vrsimo konkatenaciju
+
