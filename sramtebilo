@@ -1,0 +1,262 @@
+/* a) Prikazati Broj Indeksa, Prezime Ime i godinu Studija studenata prve godine sortirane po abecedi
+		Prezimena i Imena studenta*/
+
+SELECT br_ind, prezime, ime, godstud FROM student 
+	WHERE godstud = 'I' ORDER BY prezime, ime;
+
+/* b) Prikazati sve podatke o studentima sortirane po abecednom redosledu prezimena i imena u
+okviru godine studija */
+
+SELECT * FROM student
+	ORDER BY godstud, prezime, ime;
+
+/*  c) Prikazati Prezime, Ime studenata koji kao treće slovo prezimena imaju slovi T. */
+
+SELECT prezime, ime FROM student WHERE prezime LIKE '__T%';
+
+/* d) Prikazati Prezime, Ime i Zvanje nastavnika koji nemaju definisanog direktora */
+
+SELECT prezime_ime, zvanje FROM nastavnik 
+	WHERE s_dir IS NULL;
+
+/* e) Prikazati šifru projekta (S_Pro), Naziv projekta i budžet za projekte na kojima učestvuju
+nastavnici čije su šifre: (2, 4, 6). */
+
+SELECT projekat.s_pro, projekat.naziv_pro, projekat.budzet 
+	FROM projekat WHERE s_pro IN (SELECT s_pro FROM ucestvuje WHERE s_nas IN (2, 4, 6));
+
+/* f) U relaciju Nastavnik dodati podatke o nastavniku ’Savic Goran’ koji je u Zvanju
+‘Docent’, šifra mu je 11, prima platu 11.500 dinara, radi na katedri ‘Katedra za racunarske
+nauke i informatiku’ cija sifra je 1, a direktor mu je nastavnik ‘Simic Sima’ čija šifra
+nastavnika je 4. */
+
+INSERT INTO nastavnik VALUES(11, 'Savic Goran', 'Docent', 11500, 4, 1);
+
+/* g) Za sve nastavnike sa zvanjem 'Docent' ili 'V Prof' koji ne predaju nijedan predmet, prikazati:
+Šifru nastavnika (S_Nas), Prezime_Ime i Zvanje.  */
+
+SELECT s_nas, prezime_ime, zvanje FROM nastavnik 
+	WHERE zvanje IN ('Docent', 'V prof') AND 
+		s_nas NOT IN (SELECT DISTINCT s_nas FROM predmet);
+
+/* h) Za svakog nastavnika prikazati Prezime, Ime, Zvanje i broj predmeta koji predaje. Rezultate
+sortirati po opadajucoj vrednosti broja predmeta koje nastavnik predaje. */
+
+SELECT prezime_ime, zvanje, COUNT(*) as BrPredmeta
+	FROM nastavnik, predmet 
+	WHERE nastavnik.s_nas = predmet.s_nas
+	GROUP BY prezime_ime, zvanje
+	ORDER BY BrPredmeta;
+
+/* i) Prikazati šifru predmeta (S_Pred), Naziv predmeta, Prezime_Ime i Zvanje nastavnika koji
+predmet predaje. */ 
+
+SELECT s_pred, naziv_pred,  prezime_ime, zvanje 
+	FROM predmet, nastavnik
+	WHERE nastavnik.s_nas = predmet.s_nas;
+
+/* j) Prikazati Broj indeksa, Prezime, Ime studenta i ocenu za studente koji su polozili predmet
+‘Osnove baza podataka’ */
+
+--Moj Nacin
+SELECT student.br_ind, prezime, ime, ocena 
+	FROM student, polozio
+	WHERE student.br_ind = polozio.br_ind AND 
+		s_pred = (SELECT s_pred FROM predmet WHERE naziv_pred = 'Osnove baza podataka');
+
+--Drugi Nacin
+SELECT st.br_ind, prezime, ime, ocena FROM student as st, polozio as po, predmet as pr
+	WHERE st.br_ind = po.br_ind AND
+		po.s_pred = pr.s_pred AND
+		pr.naziv_pred = 'Osnove baza podataka';
+
+/* k) Za svaki projekat prikazati Šifru projekta, Naziv projekta i broj nastavnika koji na projektu radi.
+Rezultate sortirati po opadajućem broju nastavnika koji rade a projektu. */
+
+SELECT p.s_pro, p.naziv_pro, COUNT(*) as broj_nastavnika
+	FROM projekat as p, ucestvuje as u
+	WHERE p.s_pro = u.s_pro
+	GROUP BY p.s_pro, p.naziv_pro
+	ORDER BY broj_nastavnika;
+
+/* l) Prikazati: Sifru nastavnika, Prezime_Ime, Zvanje, i broj projekata na kojima rade, za nastavnike
+koji rade na vise od dva projekta.  */
+
+SELECT nastavnik.s_nas, prezime_ime, zvanje, COUNT(*) as broj_projekata 
+	FROM nastavnik, ucestvuje 
+	WHERE nastavnik.s_nas = ucestvuje.s_nas
+	GROUP BY ucestvuje.s_nas , nastavnik.s_nas, prezime_ime, zvanje
+	HAVING COUNT(ucestvuje.s_nas) > 2
+	 
+/* m) Prikazati ukupan broj zaposlenih na katedri sa nazivom "Katedra za racunarske nauke i
+informatiku" (upit uraditi na dva nacina: dinamickom zamenom i spajanjem). */
+
+--Prvi nacin, spajanjem
+SELECT COUNT(*) as BrZaposlenih 
+	FROM katedra k, nastavnik n
+	WHERE k.naziv_kat = 'Katedra za racunarske nauke i informatiku' AND
+		k.s_kat = n.s_kat;
+
+--Drugi nacin, dinamickom zamenom -----NE RADI, ne znam kako
+SELECT COUNT(*)
+	FROM katedra
+	--WHERE EXISTS (SELECT s_kat WHERE naziv_kat LIKE 'Katedra za racunarske nauke i informatiku' = s_kat);
+	--TAJ DEO NE NAM
+
+/*  n) Za svaki projekat na kojem radi vise od dva nastavnika prikazati: Sifru projekta, Naziv projekta
+i broj nastavnika koji rade na projektu, sortirane po rastućoj vrednosti sifre projekta.  */
+
+SELECT ucestvuje.s_pro, projekat.naziv_pro, COUNT(*) as br_nastavnika
+	FROM ucestvuje , projekat
+	WHERE ucestvuje.s_pro = projekat.s_pro
+	GROUP BY ucestvuje.s_pro, projekat.naziv_pro 
+	HAVING COUNT(*) > 2;
+
+/* o) Prikazati Sifru nastavnika, Prezime_ime i naziv katedre na kojoj rade, za sve nastavnike koji
+zaradjuju vise od iznosa prosecne plate katedre na kojoj su zaposleni. */
+
+SELECT nastavnikA.s_nas, nastavnikA.prezime_ime, katedra.naziv_kat 
+	FROM nastavnik as nastavnikA, katedra
+	WHERE nastavnikA.s_kat = katedra.s_kat AND
+		nastavnikA.plata > (SELECT AVG(plata) FROM nastavnik as nastavnikB
+							WHERE nastavnikA.s_kat = nastavnikB.s_kat);
+
+/*  p) Prikazati Broj indeksa, Prezime, Ime i godinu studija studenata koji nisu polozili nijedan ispit. */
+	 
+SELECT br_ind, prezime, ime, godstud 
+	FROM student
+	WHERE br_ind NOT IN (SELECT br_ind FROM polozio);
+
+/*  q) Za svakog studenta prikazati Broj indeksa, Prezime, Ime i broj ispita koje je student položio.
+Rezultate sortirati po opadajućem broju položenih ispita. */
+
+SELECT student.br_ind, student.prezime, student.ime, COUNT(*) as broj_polozenih
+	FROM student, polozio
+	WHERE student.br_ind = polozio.br_ind
+	GROUP BY student.br_ind, student.prezime, student.ime
+	ORDER BY broj_polozenih DESC;
+
+/*  r) Za svaku godinu studija prikazati godinu studija i broj studenata na svakoj godini. Rezultate
+sortirati po opadajućem broju studenata na godini. */
+
+SELECT godstud as godina_studija, COUNT(*) as broj_studenata 
+	FROM student 
+	GROUP BY godstud
+	ORDER BY broj_studenata;
+
+/* s) Za studenta sa brojem indeksa ‘E 7398’ prikazati spisak položenih ispita sa: Šifrom predmeta,
+Nazivom predmeta i ocenom.  */
+
+SELECT predmet.s_pred, predmet.naziv_pred, polozio.ocena 
+	FROM polozio, predmet
+	WHERE polozio.s_pred = predmet.s_pred AND
+		polozio.br_ind = 'E 7398';
+
+/*  t) Za Nastavnike sa zvanjem 'Docent' prikazati: Prezime_Ime, Zvanje i Naziv katedre na kojoj
+rade. */
+
+SELECT nastavnik.prezime_ime as prezime_i_ime, nastavnik.zvanje, katedra.naziv_kat
+		FROM nastavnik, katedra
+		WHERE nastavnik.s_kat = katedra.s_kat AND
+			nastavnik.zvanje = 'Docent';
+
+/* u) Prikazati godinu studija, Broj studenata na godini za godine na kojima ima vise od 3 studenata. */
+
+SELECT godstud as godina_studija, COUNT(*) as broj_studenata 
+	FROM student
+	GROUP BY godstud
+	HAVING COUNT(*) > 3
+
+/*  v) Prikazati broj indeksa, Prezime i Ime studenta i broj polozenih ispita za studente koji su polozili
+vise od 2 ispita i imaju prosecnu ocenu vecu od 7. */
+
+SELECT student.br_ind, prezime, ime, COUNT(*) as broj_polozenih 
+	FROM student, polozio 
+	WHERE student.br_ind = polozio.br_ind
+	GROUP BY polozio.br_ind, student.br_ind, prezime, ime
+	HAVING COUNT(*) > 2 AND 
+		(SELECT AVG(ocena) FROM polozio WHERE student.br_ind = polozio.br_ind GROUP BY br_ind) > 7;
+		--Probaj staviti samo AVG(Ocena) ovde
+
+/* a) Prikazati BrojIndeksa iza koga neposredno sledi tekst “Prosecna ocena” i vrednost Prosecne
+ocene. */
+
+SELECT br_ind, ' Prosecna ocena: ' + STR(AVG(Ocena)) FROM polozio
+		GROUP BY br_ind
+
+/*  w) Prikazati PrezimeIme Nastavnika velikim slovima iza kojeg neposredno sledi zvanje razdvojeni
+zarezom. */
+
+SELECT UPPER(prezime_ime) + ', ' + zvanje 
+	FROM nastavnik  
+
+/*  x) Nastavnicima koji predaju više od jednog predmeta povecati platu za 1.000 dinara. */
+
+UPDATE nastavnik SET plata = (plata + 1000)
+	WHERE s_nas IN
+		(SELECT s_nas FROM predmet GROUP BY s_nas HAVING COUNT(*) > 1);
+
+/*  y) U bazu podataka dodati tabelu Smer s obeležjima S_Smer koje je celobrojno, NazivSmera koje
+je niz od najviše 15 karaktera. Primarni ključ šeme relacije je obeležje S_Smera.  */
+
+CREATE TABLE smer 
+	(s_smer INT PRIMARY KEY,
+	naziv_smera VARCHAR(15));
+
+/*  z) U Šemu relacije Student dodati obeležje šifre smera na kojem student studira koje je celobrojno
+i ne sme poprimiti Null vrednost.  */
+
+ALTER TABLE student ADD s_smer INT NOT NULL DEFAULT 0;
+		--Mora postojati DEFAULT jer se ne moze dodati obelezje sa NOT NULL u postojecu tabelu
+
+/* aa) Dodati podatke u bazu podataka o smeru ciji naziv je ‘Softverske i informacione
+tehnologije’, a sifra smera je 01. */
+
+	--Greska u zadatku, naziv smera moze da sadrzi najvise 15 karaktera
+INSERT INTO smer VALUES (1, 'Softverske i informacione tehnologije') -- Ovo ne pusi
+INSERT INTO smer VALUES (1, 'SIIT') -- Ovako jbg
+
+/* bb) Ukloniti obeležje S_Smera iz tabele Student. */
+
+--Ne moze da se ukloni jer ima DEFAULT CONSTRAINT
+
+/* cc) Obrisati sve n-torke iz relacije Smer. */
+
+TRUNCATE TABLE smer; --TRUNCATE radi brze, brise celu tabelu
+	--ILI
+DELETE FROM smer;	
+
+/* dd) Ukloniti definiciju tabele Smer iz baze podataka.  */
+
+DROP TABLE smer;
+
+/* ee) Prikazati Nazive projekata na kojima rade Nastavnici sa katedre čiji naziv je ‘Katedra za
+Automatiku’. */
+
+SELECT naziv_pro 
+	FROM projekat , ucestvuje
+	WHERE ucestvuje.s_pro = projekat.s_pro AND
+		ucestvuje.s_nas = 
+		(SELECT s_nas FROM nastavnik WHERE s_kat =
+			(SELECT s_kat FROM katedra WHERE naziv_kat = 'Katedra za Automatiku'));
+
+/* ff) Za svaku katedru prikazati šifru katedre, naziv katedre i broj nastavnika koji rade na projektima.  */
+
+SELECT katedra.s_kat, naziv_kat, COUNT(*) as broj_nastavnika_na_projektima 
+	FROM katedra, nastavnik
+	WHERE katedra.s_kat = nastavnik.s_kat AND 
+		nastavnik.s_nas IN (SELECT DISTINCT s_nas FROM ucestvuje )
+	GROUP BY nastavnik.s_kat, katedra.s_kat, naziv_kat
+
+/*  gg) Za svaku katedru prikazati Sifru, Naziv katedre, Broj projekata na kojima rade nastavnici sa te
+katedre i Broj nastavnika katedre koji učestvuju na projektima. Rezultate sortirati po
+opadajućem broju projekata na kojima rade nastavnici sa katedre. */
+
+
+Select k.s_kat, k.naziv_kat,COUNT(distinct u.s_nas) AS BrProjekataRade, COUNT(distinct u.s_pro) AS BrProjekataUcestvuju
+From katedra k, ucestvuje u
+Where k.s_kat = (select n.s_kat From nastavnik n Where n.s_nas = u.s_nas)
+Group By k.s_kat, k.naziv_kat
+Order By k.s_kat
+
+ 
